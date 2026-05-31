@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">P2P Control VE</string>
+    <string name="dashboard">Panel</string>
+    <string name="nueva_transaccion">Nueva Transacción</string>
+    <string name="historial">Historial</string>
+    <string name="movimientos">Movimientos</string>
+    <string name="configuracion">Configuración</string>
+    <string name="compra">Compra</string>
+    <string name="venta">Venta</string>
+    <string name="plataforma">Plataforma</string>
+    <string name="banco">Banco</string>
+    <string name="moneda_fiat">Moneda Fiat</string>
+    <string name="monto_fiat">Monto Fiat</string>
+    <string name="cantidad_usdt">Cantidad USDT</string>
+    <string name="tasa">Tasa</string>
+    <string name="comision">Comisión (USDT)</string>
+    <string name="notas">Notas</string>
+    <string name="guardar">Guardar</string>
+    <string name="cancelar">Cancelar</string>
+    <string name="eliminar">Eliminar</string>
+    <string name="ganancia">Ganancia</string>
+    <string name="perdida">Pérdida</string>
+    <string name="balance_total">Balance Total</string>
+    <string name="usdt_disponibles">USDT Disponibles</string>
+    <string name="gp_mes">G/P del Mes</string>
+    <string name="tasa_usd_ves">Tasa USD/VES</string>
+    <string name="fecha">Fecha</string>
+    <string name="descripcion">Descripción</string>
+    <string name="ingreso">Ingreso</string>
+    <string name="egreso">Egreso</string>
+    <string name="transferencia">Transferencia</string>
+    <string name="banco_origen">Banco Origen</string>
+    <string name="banco_destino">Banco Destino</string>
+    <string name="exportar_csv">Exportar CSV</string>
+    <string name="agregar_banco">Agregar Banco</string>
+    <string name="agregar_plataforma">Agregar Plataforma</string>
+    <string name="saldo_inicial">Saldo Inicial</string>
+    <string name="tipo">Tipo</string>
+    <string name="filtros">Filtros</string>
+    <string name="todas">Todas</string>
+    <string name="ultimas_transacciones">Últimas Transacciones</string>
+    <string name="distribucion_saldos">Distribución de Saldos</string>
+    <string name="saldos_por_banco">Saldos por Banco</string>
+</resources>
