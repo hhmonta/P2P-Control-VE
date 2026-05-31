@@ -187,6 +187,7 @@ fun MovimientosScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MovimientoForm(
     uiState: MovimientosUiState,
@@ -254,7 +255,7 @@ private fun MovimientoForm(
             shape = RoundedCornerShape(12.dp),
             enabled = uiState.monto.isNotEmpty()
         ) {
-            Text(label, color = Green800, fontWeight = FontWeight.Bold)
+            Text(label, color = DarkBackground, fontWeight = FontWeight.Bold)
         }
 
         if (uiState.error != null) {
@@ -263,6 +264,7 @@ private fun MovimientoForm(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TransferenciaForm(
     uiState: MovimientosUiState,

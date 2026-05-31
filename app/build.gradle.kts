@@ -22,6 +22,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            isMinifyEnabled = false
+            isShrinkResources = false
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -54,6 +58,13 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    // Speed up builds
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+        kotlinOptions {
+            jvmTarget = "17"
+        }
+    }
 }
 
 dependencies {
@@ -84,17 +95,11 @@ dependencies {
     implementation("androidx.room:room-ktx:$roomVersion")
     ksp("androidx.room:room-compiler:$roomVersion")
 
-    // BigDecimal support
+    // BigDecimal support / Date-Time
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
-
-    // DataStore for preferences
-    implementation("androidx.datastore:datastore-preferences:1.0.0")
 
     // CSV Export
     implementation("com.opencsv:opencsv:5.9")
-
-    // Charts
-    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 
     // Biometric
     implementation("androidx.biometric:biometric:1.1.0")

@@ -290,12 +290,12 @@ fun NuevaTransaccionScreen(
                 if (uiState.isSaving) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
-                        color = Green800
+                        color = DarkBackground
                     )
                 } else {
                     Text(
                         "GUARDAR TRANSACCIÓN",
-                        color = Green800,
+                        color = DarkBackground,
                         fontWeight = FontWeight.Bold
                     )
                 }

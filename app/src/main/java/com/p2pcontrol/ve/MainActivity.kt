@@ -36,14 +36,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             P2PControlVETheme {
-                P2PControlApp()
+                P2PControlAppContent()
             }
         }
     }
 }
 
 @Composable
-fun P2PControlApp() {
+fun P2PControlAppContent() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination

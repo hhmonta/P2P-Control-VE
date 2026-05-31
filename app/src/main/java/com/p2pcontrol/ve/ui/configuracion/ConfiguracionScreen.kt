@@ -127,7 +127,7 @@ fun ConfiguracionScreen(
                         }
 
                         Spacer(modifier = Modifier.height(12.dp))
-                        HorizontalDivider(color = DarkBorder)
+                        Divider(color = DarkBorder)
                         Spacer(modifier = Modifier.height(12.dp))
 
                         // Agregar nuevo banco
@@ -225,7 +225,7 @@ fun ConfiguracionScreen(
                         }
 
                         Spacer(modifier = Modifier.height(12.dp))
-                        HorizontalDivider(color = DarkBorder)
+                        Divider(color = DarkBorder)
                         Spacer(modifier = Modifier.height(12.dp))
 
                         Text("Agregar Plataforma", style = MaterialTheme.typography.labelLarge, color = GreenLight)
