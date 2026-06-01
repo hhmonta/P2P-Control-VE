@@ -14,35 +14,59 @@ class Converters {
     fun fromBigDecimal(value: BigDecimal?): String? = value?.toPlainString()
 
     @TypeConverter
-    fun toBigDecimal(value: String?): BigDecimal? = value?.let { BigDecimal(it) }
+    fun toBigDecimal(value: String?): BigDecimal? = try {
+        value?.let { BigDecimal(it) }
+    } catch (e: NumberFormatException) {
+        BigDecimal.ZERO
+    }
 
     @TypeConverter
     fun fromMoneda(moneda: Moneda): String = moneda.name
 
     @TypeConverter
-    fun toMoneda(value: String): Moneda = Moneda.valueOf(value)
+    fun toMoneda(value: String): Moneda = try {
+        Moneda.valueOf(value)
+    } catch (e: IllegalArgumentException) {
+        Moneda.VES
+    }
 
     @TypeConverter
     fun fromTipoTransaccion(tipo: TipoTransaccion): String = tipo.name
 
     @TypeConverter
-    fun toTipoTransaccion(value: String): TipoTransaccion = TipoTransaccion.valueOf(value)
+    fun toTipoTransaccion(value: String): TipoTransaccion = try {
+        TipoTransaccion.valueOf(value)
+    } catch (e: IllegalArgumentException) {
+        TipoTransaccion.COMPRA
+    }
 
     @TypeConverter
     fun fromTipoMovimiento(tipo: TipoMovimiento): String = tipo.name
 
     @TypeConverter
-    fun toTipoMovimiento(value: String): TipoMovimiento = TipoMovimiento.valueOf(value)
+    fun toTipoMovimiento(value: String): TipoMovimiento = try {
+        TipoMovimiento.valueOf(value)
+    } catch (e: IllegalArgumentException) {
+        TipoMovimiento.INGRESO
+    }
 
     @TypeConverter
     fun fromLocalDateTime(value: LocalDateTime?): String? = value?.toString()
 
     @TypeConverter
-    fun toLocalDateTime(value: String?): LocalDateTime? = value?.let { LocalDateTime.parse(it) }
+    fun toLocalDateTime(value: String?): LocalDateTime? = try {
+        value?.let { LocalDateTime.parse(it) }
+    } catch (e: Exception) {
+        null
+    }
 
     @TypeConverter
     fun fromLocalDate(value: LocalDate?): String? = value?.toString()
 
     @TypeConverter
-    fun toLocalDate(value: String?): LocalDate? = value?.let { LocalDate.parse(it) }
+    fun toLocalDate(value: String?): LocalDate? = try {
+        value?.let { LocalDate.parse(it) }
+    } catch (e: Exception) {
+        null
+    }
 }

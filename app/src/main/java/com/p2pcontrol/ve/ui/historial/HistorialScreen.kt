@@ -162,7 +162,7 @@ fun HistorialScreen(
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = GreenLight)
                 }
-            } else if (uiState.transacciones.isEmpty()) {
+            } else if (uiState.transaccionesFiltradas.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("Sin transacciones", color = TextSecondary, style = MaterialTheme.typography.bodyLarge)
@@ -173,11 +173,12 @@ fun HistorialScreen(
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(uiState.transacciones) { tx ->
+                    items(uiState.transaccionesFiltradas) { txDisplay ->
+                        val tx = txDisplay.transaccion
                         TransaccionListItem(
                             tipo = tx.tipo.etiqueta,
-                            plataforma = "ID:${tx.plataformaId}",
-                            banco = "ID:${tx.bancoId}",
+                            plataforma = txDisplay.plataformaNombre,
+                            banco = txDisplay.bancoNombre,
                             montoFiat = formatBigDecimal(tx.montoFiat),
                             cantidadUsdt = formatBigDecimal(tx.cantidadUsdt),
                             gananciaPerdida = tx.gananciaPerdidaUsdt,

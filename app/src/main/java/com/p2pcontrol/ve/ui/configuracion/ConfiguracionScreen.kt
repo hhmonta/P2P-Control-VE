@@ -39,6 +39,14 @@ fun ConfiguracionScreen(
 
     LaunchedEffect(uiState.message) {
         if (uiState.message != null) {
+            kotlinx.coroutines.delay(3000)
+            viewModel.clearMessage()
+        }
+    }
+
+    LaunchedEffect(uiState.error) {
+        if (uiState.error != null) {
+            kotlinx.coroutines.delay(4000)
             viewModel.clearMessage()
         }
     }

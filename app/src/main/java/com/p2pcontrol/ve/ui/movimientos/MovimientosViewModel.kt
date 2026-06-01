@@ -47,9 +47,9 @@ class MovimientosViewModel(
                 _uiState.update {
                     it.copy(
                         bancos = bancos,
-                        bancoSeleccionado = bancos.firstOrNull(),
-                        bancoOrigen = bancos.firstOrNull(),
-                        bancoDestino = bancos.getOrNull(1) ?: bancos.firstOrNull()
+                        bancoSeleccionado = it.bancoSeleccionado ?: bancos.firstOrNull(),
+                        bancoOrigen = it.bancoOrigen ?: bancos.firstOrNull(),
+                        bancoDestino = it.bancoDestino ?: bancos.getOrNull(1) ?: bancos.firstOrNull()
                     )
                 }
             }

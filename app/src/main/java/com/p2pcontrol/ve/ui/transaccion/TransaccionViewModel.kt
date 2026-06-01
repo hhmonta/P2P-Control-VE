@@ -56,12 +56,20 @@ class TransaccionViewModel(
                 inventarioUsdtRepository.getInventarioDisponible()
             ) { plataformas, bancos, inventario ->
                 _uiState.update { state ->
+                    // Only set defaults if nothing is selected yet
+                    val platSel = state.plataformaSeleccionada
+                        ?: plataformas.firstOrNull()
+                        ?: if (plataformas.any { it.id == state.plataformaSeleccionada?.id }) state.plataformaSeleccionada else plataformas.firstOrNull()
+                    val bancoSel = state.bancoSeleccionado
+                        ?: bancos.firstOrNull()
+                        ?: if (bancos.any { it.id == state.bancoSeleccionado?.id }) state.bancoSeleccionado else bancos.firstOrNull()
+
                     state.copy(
                         plataformas = plataformas,
                         bancos = bancos,
                         inventarioDisponible = inventario,
-                        plataformaSeleccionada = plataformas.firstOrNull(),
-                        bancoSeleccionado = bancos.firstOrNull()
+                        plataformaSeleccionada = if (state.plataformaSeleccionada == null) plataformas.firstOrNull() else state.plataformaSeleccionada,
+                        bancoSeleccionado = if (state.bancoSeleccionado == null) bancos.firstOrNull() else state.bancoSeleccionado
                     )
                 }
                 calcularCostoPromedio(inventario)
@@ -130,27 +138,21 @@ class TransaccionViewModel(
 
         val montoFiat = state.montoFiat.toBigDecimalOrNull() ?: return
         val cantidadUsdt = state.cantidadUsdt.toBigDecimalOrNull() ?: return
+        if (cantidadUsdt.compareTo(BigDecimal.ZERO) == 0) return
         val comision = state.comisionUsdt.toBigDecimalOrNull() ?: BigDecimal.ZERO
         val tasa = montoFiat.divide(cantidadUsdt, 6, RoundingMode.HALF_UP)
-
-        // Ganancia = (monto_fiat / tasa_venta) - cantidad_usdt - comision
-        // Pero mejor: Ganancia en USDT = (monto_fiat / tasa_venta) - (monto_fiat / costo_promedio) - comision
-        // Simplificado: Ganancia = cantidad_usdt * (1/tasa_venta - 1/costo_promedio) * tasa_venta - comision
-        // Más claro: Ganancia USDT = (montoFiat / tasa_venta) - cantidad_usdt - comision
-        // Como la tasa es montoFiat/cantidadUsdt, entonces montoFiat/tasa = cantidadUsdt
-        // Entonces necesitamos el costo base:
-        // Ganancia = (montoFiat / tasa_venta) - (costo_base_en_usdt) - comision
-        // Costo base en USDT = cantidadUsdt * costoUnitarioFiat / tasa_venta (si costo está en VES)
 
         if (state.costoPromedioPonderado.compareTo(BigDecimal.ZERO) == 0) return
 
         val costoBaseUsdt = if (state.fiatMoneda == Moneda.VES) {
             val costoBaseVes = cantidadUsdt.multiply(state.costoPromedioPonderado)
+            if (tasa.compareTo(BigDecimal.ZERO) == 0) return
             costoBaseVes.divide(tasa, 6, RoundingMode.HALF_UP)
         } else {
             cantidadUsdt.multiply(state.costoPromedioPonderado)
         }
 
+        if (tasa.compareTo(BigDecimal.ZERO) == 0) return
         val ingresoUsdt = montoFiat.divide(tasa, 6, RoundingMode.HALF_UP)
         val ganancia = ingresoUsdt.subtract(costoBaseUsdt).subtract(comision)
 
@@ -164,6 +166,13 @@ class TransaccionViewModel(
             val plataforma = state.plataformaSeleccionada ?: return@launch
             val montoFiat = state.montoFiat.toBigDecimalOrNull() ?: return@launch
             val cantidadUsdt = state.cantidadUsdt.toBigDecimalOrNull() ?: return@launch
+
+            // Bug 2 fix: Guard against zero division
+            if (cantidadUsdt.compareTo(BigDecimal.ZERO) == 0) {
+                _uiState.update { it.copy(error = "La cantidad de USDT debe ser mayor a 0") }
+                return@launch
+            }
+
             val comision = state.comisionUsdt.toBigDecimalOrNull() ?: BigDecimal.ZERO
             val tasa = montoFiat.divide(cantidadUsdt, 6, RoundingMode.HALF_UP)
 

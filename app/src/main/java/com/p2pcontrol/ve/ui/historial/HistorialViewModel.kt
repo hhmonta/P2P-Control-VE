@@ -12,10 +12,15 @@ import com.p2pcontrol.ve.data.repository.PlataformaRepository
 import com.p2pcontrol.ve.data.repository.TransaccionRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
+
+data class TransaccionDisplayItem(
+    val transaccion: TransaccionEntity,
+    val plataformaNombre: String,
+    val bancoNombre: String
+)
 
 data class HistorialUiState(
-    val transacciones: List<TransaccionEntity> = emptyList(),
+    val transaccionesFiltradas: List<TransaccionDisplayItem> = emptyList(),
     val bancos: List<BancoEntity> = emptyList(),
     val plataformas: List<PlataformaEntity> = emptyList(),
     val filtroTipo: TipoTransaccion? = null,
@@ -37,6 +42,10 @@ class HistorialViewModel(
     private val filtroPlataformaId = MutableStateFlow<Long?>(null)
     private val filtroBancoId = MutableStateFlow<Long?>(null)
 
+    // Cache para resolver IDs a nombres
+    private val plataformasCache = mutableMapOf<Long, String>()
+    private val bancosCache = mutableMapOf<Long, BancoEntity>()
+
     init {
         loadDatos()
     }
@@ -44,38 +53,61 @@ class HistorialViewModel(
     private fun loadDatos() {
         viewModelScope.launch {
             bancoRepository.getAllBancosActivos().collect { bancos ->
+                bancosCache.clear()
+                bancos.forEach { bancosCache[it.id] = it }
                 _uiState.update { it.copy(bancos = bancos) }
             }
         }
         viewModelScope.launch {
             plataformaRepository.getAllPlataformasActivas().collect { plataformas ->
+                plataformasCache.clear()
+                plataformas.forEach { plataformasCache[it.id] = it.nombre }
                 _uiState.update { it.copy(plataformas = plataformas) }
             }
         }
+        // Combine all transactions with filters
         viewModelScope.launch {
-            transaccionRepository.getAllTransacciones().collect { transacciones ->
-                _uiState.update { it.copy(transacciones = transacciones, isLoading = false) }
-            }
+            combine(
+                transaccionRepository.getAllTransacciones(),
+                filtroTipo,
+                filtroPlataformaId,
+                filtroBancoId
+            ) { transacciones, fTipo, fPlatId, fBancoId ->
+                val filtered = transacciones.filter { tx ->
+                    (fTipo == null || tx.tipo == fTipo) &&
+                    (fPlatId == null || tx.plataformaId == fPlatId) &&
+                    (fBancoId == null || tx.bancoId == fBancoId)
+                }
+                val displayItems = filtered.map { tx ->
+                    TransaccionDisplayItem(
+                        transaccion = tx,
+                        plataformaNombre = plataformasCache[tx.plataformaId] ?: "ID:${tx.plataformaId}",
+                        bancoNombre = bancosCache[tx.bancoId]?.nombre ?: "ID:${tx.bancoId}"
+                    )
+                }
+                _uiState.update {
+                    it.copy(
+                        transaccionesFiltradas = displayItems,
+                        filtroTipo = fTipo,
+                        filtroPlataformaId = fPlatId,
+                        filtroBancoId = fBancoId,
+                        isLoading = false
+                    )
+                }
+            }.collect()
         }
     }
 
     fun setFiltroTipo(tipo: TipoTransaccion?) {
         filtroTipo.value = tipo
-        _uiState.update { it.copy(filtroTipo = tipo) }
     }
 
     fun setFiltroPlataforma(id: Long?) {
         filtroPlataformaId.value = id
-        _uiState.update { it.copy(filtroPlataformaId = id) }
     }
 
     fun setFiltroBanco(id: Long?) {
         filtroBancoId.value = id
-        _uiState.update { it.copy(filtroBancoId = id) }
-    }
-
-    suspend fun getBancoNombre(bancoId: Long): String {
-        return bancoRepository.getBancoById(bancoId)?.nombre ?: "Desconocido"
     }
 
     class Factory(

@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.p2pcontrol.ve.data.local.entity.BancoEntity
+import com.p2pcontrol.ve.data.local.entity.PlataformaEntity
 import com.p2pcontrol.ve.data.local.entity.TransaccionEntity
 import com.p2pcontrol.ve.data.local.entity.MovimientoBancarioEntity
+import com.p2pcontrol.ve.data.model.Moneda
 import com.p2pcontrol.ve.data.repository.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -20,12 +22,18 @@ data class BancoSaldoUi(
     val saldoEnUsd: BigDecimal
 )
 
+data class TransaccionDisplay(
+    val transaccion: TransaccionEntity,
+    val plataformaNombre: String,
+    val bancoNombre: String
+)
+
 data class DashboardUiState(
     val balanceTotalUsd: BigDecimal = BigDecimal.ZERO,
     val usdtDisponibles: BigDecimal = BigDecimal.ZERO,
     val gananciaPerdidaMes: BigDecimal = BigDecimal.ZERO,
     val bancosConSaldo: List<BancoSaldoUi> = emptyList(),
-    val ultimasTransacciones: List<TransaccionEntity> = emptyList(),
+    val ultimasTransacciones: List<TransaccionDisplay> = emptyList(),
     val tasaUsdVes: BigDecimal = BigDecimal.ONE,
     val isLoading: Boolean = true
 )
@@ -35,17 +43,36 @@ class DashboardViewModel(
     private val transaccionRepository: TransaccionRepository,
     private val movimientoBancarioRepository: MovimientoBancarioRepository,
     private val configuracionRepository: ConfiguracionRepository,
-    private val inventarioUsdtRepository: InventarioUsdtRepository
+    private val inventarioUsdtRepository: InventarioUsdtRepository,
+    private val plataformaRepository: PlataformaRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
+
+    // Cache para resolver IDs a nombres
+    private val plataformasCache = mutableMapOf<Long, String>()
+    private val bancosCache = mutableMapOf<Long, BancoEntity>()
 
     init {
         loadDashboard()
     }
 
     private fun loadDashboard() {
+        // Load platforms and banks cache first
+        viewModelScope.launch {
+            plataformaRepository.getAllPlataformasActivas().collect { plataformas ->
+                plataformasCache.clear()
+                plataformas.forEach { plataformasCache[it.id] = it.nombre }
+            }
+        }
+        viewModelScope.launch {
+            bancoRepository.getAllBancosActivos().collect { bancos ->
+                bancosCache.clear()
+                bancos.forEach { bancosCache[it.id] = it }
+            }
+        }
+
         viewModelScope.launch {
             combine(
                 bancoRepository.getAllBancosActivos(),
@@ -53,13 +80,12 @@ class DashboardViewModel(
                 inventarioUsdtRepository.getTotalUsdtDisponible(),
                 configuracionRepository.getTasaUsdVesFlow()
             ) { bancos, ultimas, usdtTotal, tasa ->
-                val inicioMes = LocalDate.now().withDayOfMonth(1).atStartOfDay()
-                val finMes = LocalDateTime.now()
-
                 val bancosConSaldo = bancos.map { banco ->
                     val saldo = calcularSaldoBanco(banco.id, banco.saldoInicial)
-                    val saldoUsd = if (banco.moneda.name == "VES") {
-                        saldo.divide(tasa, 2, RoundingMode.HALF_UP)
+                    val saldoUsd = if (banco.moneda == Moneda.VES) {
+                        if (tasa.compareTo(BigDecimal.ZERO) > 0) {
+                            saldo.divide(tasa, 2, RoundingMode.HALF_UP)
+                        } else BigDecimal.ZERO
                     } else {
                         saldo
                     }
@@ -70,19 +96,35 @@ class DashboardViewModel(
                     acc.add(b.saldoEnUsd)
                 }
 
+                // Resolve names for transactions
+                val transaccionesDisplay = ultimas.map { tx ->
+                    TransaccionDisplay(
+                        transaccion = tx,
+                        plataformaNombre = plataformasCache[tx.plataformaId] ?: "Desconocido",
+                        bancoNombre = bancosCache[tx.bancoId]?.nombre ?: "Desconocido"
+                    )
+                }
+
                 DashboardUiState(
                     balanceTotalUsd = balanceTotal,
                     usdtDisponibles = usdtTotal,
-                    gananciaPerdidaMes = BigDecimal.ZERO, // Se actualiza abajo
+                    gananciaPerdidaMes = BigDecimal.ZERO,
                     bancosConSaldo = bancosConSaldo,
-                    ultimasTransacciones = ultimas,
+                    ultimasTransacciones = transaccionesDisplay,
                     tasaUsdVes = tasa,
                     isLoading = false
                 )
             }.collect { state ->
                 _uiState.value = state
-                // Cargar ganancia/pérdida del mes
-                loadGananciaPerdida()
+            }
+        }
+
+        // Separate flow for G/P - with proper lifecycle
+        viewModelScope.launch {
+            val inicioMes = LocalDate.now().withDayOfMonth(1).atStartOfDay()
+            val finMes = LocalDateTime.now()
+            transaccionRepository.getGananciaPerdidaPeriodo(inicioMes, finMes).collect { gp ->
+                _uiState.update { it.copy(gananciaPerdidaMes = gp) }
             }
         }
     }
@@ -98,22 +140,13 @@ class DashboardViewModel(
         return total
     }
 
-    private fun loadGananciaPerdida() {
-        viewModelScope.launch {
-            val inicioMes = LocalDate.now().withDayOfMonth(1).atStartOfDay()
-            val finMes = LocalDateTime.now()
-            transaccionRepository.getGananciaPerdidaPeriodo(inicioMes, finMes).collect { gp ->
-                _uiState.update { it.copy(gananciaPerdidaMes = gp) }
-            }
-        }
-    }
-
     class Factory(
         private val bancoRepository: BancoRepository,
         private val transaccionRepository: TransaccionRepository,
         private val movimientoBancarioRepository: MovimientoBancarioRepository,
         private val configuracionRepository: ConfiguracionRepository,
-        private val inventarioUsdtRepository: InventarioUsdtRepository
+        private val inventarioUsdtRepository: InventarioUsdtRepository,
+        private val plataformaRepository: PlataformaRepository
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -122,7 +155,8 @@ class DashboardViewModel(
                 transaccionRepository,
                 movimientoBancarioRepository,
                 configuracionRepository,
-                inventarioUsdtRepository
+                inventarioUsdtRepository,
+                plataformaRepository
             ) as T
         }
     }

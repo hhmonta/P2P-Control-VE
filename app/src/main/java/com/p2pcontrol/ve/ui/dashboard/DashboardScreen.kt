@@ -9,13 +9,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.p2pcontrol.ve.P2PControlApp
 import com.p2pcontrol.ve.ui.components.*
 import com.p2pcontrol.ve.ui.theme.*
+import java.math.BigDecimal
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,7 +27,8 @@ fun DashboardScreen(
             P2PControlApp.instance.transaccionRepository,
             P2PControlApp.instance.movimientoBancarioRepository,
             P2PControlApp.instance.configuracionRepository,
-            P2PControlApp.instance.inventarioUsdtRepository
+            P2PControlApp.instance.inventarioUsdtRepository,
+            P2PControlApp.instance.plataformaRepository
         )
     )
 ) {
@@ -52,7 +53,7 @@ fun DashboardScreen(
             FloatingActionButton(
                 onClick = onNuevaTransaccion,
                 containerColor = GreenLight,
-                contentColor = Green800
+                contentColor = DarkBackground
             ) {
                 Icon(Icons.Filled.Add, contentDescription = "Nueva transacción")
             }
@@ -78,25 +79,19 @@ fun DashboardScreen(
 
                 // Tarjetas de resumen
                 item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        SummaryCard(
-                            title = "Balance Total",
-                            value = "$ ${formatBigDecimal(uiState.balanceTotalUsd)}",
-                            valueColor = UsdColor,
-                            icon = {
-                                Icon(
-                                    Icons.Filled.AccountBalanceWallet,
-                                    contentDescription = null,
-                                    tint = UsdColor,
-                                    modifier = Modifier.size(32.dp)
-                                )
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+                    SummaryCard(
+                        title = "Balance Total",
+                        value = "$ ${formatBigDecimal(uiState.balanceTotalUsd)}",
+                        valueColor = UsdColor,
+                        icon = {
+                            Icon(
+                                Icons.Filled.AccountBalanceWallet,
+                                contentDescription = null,
+                                tint = UsdColor,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    )
                 }
 
                 item {
@@ -120,13 +115,13 @@ fun DashboardScreen(
                         )
                         SummaryCard(
                             title = "G/P del Mes",
-                            value = "${if (uiState.gananciaPerdidaMes >= java.math.BigDecimal.ZERO) "+" else ""}${formatBigDecimal(uiState.gananciaPerdidaMes)}",
-                            valueColor = if (uiState.gananciaPerdidaMes >= java.math.BigDecimal.ZERO) GreenLight else RedLight,
+                            value = "${if (uiState.gananciaPerdidaMes >= BigDecimal.ZERO) "+" else ""}${formatBigDecimal(uiState.gananciaPerdidaMes)}",
+                            valueColor = if (uiState.gananciaPerdidaMes >= BigDecimal.ZERO) GreenLight else RedLight,
                             icon = {
                                 Icon(
-                                    if (uiState.gananciaPerdidaMes >= java.math.BigDecimal.ZERO) Icons.Filled.TrendingUp else Icons.Filled.TrendingDown,
+                                    if (uiState.gananciaPerdidaMes >= BigDecimal.ZERO) Icons.Filled.TrendingUp else Icons.Filled.TrendingDown,
                                     contentDescription = null,
-                                    tint = if (uiState.gananciaPerdidaMes >= java.math.BigDecimal.ZERO) GreenLight else RedLight,
+                                    tint = if (uiState.gananciaPerdidaMes >= BigDecimal.ZERO) GreenLight else RedLight,
                                     modifier = Modifier.size(28.dp)
                                 )
                             },
@@ -168,7 +163,7 @@ fun DashboardScreen(
                 items(uiState.bancosConSaldo) { bancoSaldo ->
                     BancoSaldoCard(
                         bancoNombre = bancoSaldo.banco.nombre,
-                        moneda = bancoSaldo.banco.moneda.simbolo,
+                        monedaCodigo = bancoSaldo.banco.moneda,
                         saldo = bancoSaldo.saldoActual,
                         saldoUsd = bancoSaldo.saldoEnUsd
                     )
@@ -179,11 +174,12 @@ fun DashboardScreen(
                     SectionHeader(title = "Últimas Transacciones")
                 }
 
-                items(uiState.ultimasTransacciones) { tx ->
+                items(uiState.ultimasTransacciones) { txDisplay ->
+                    val tx = txDisplay.transaccion
                     TransaccionListItem(
                         tipo = tx.tipo.etiqueta,
-                        plataforma = "", // Se resolvería con un join
-                        banco = "",
+                        plataforma = txDisplay.plataformaNombre,
+                        banco = txDisplay.bancoNombre,
                         montoFiat = formatBigDecimal(tx.montoFiat),
                         cantidadUsdt = formatBigDecimal(tx.cantidadUsdt),
                         gananciaPerdida = tx.gananciaPerdidaUsdt,

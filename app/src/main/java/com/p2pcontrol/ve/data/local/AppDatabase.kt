@@ -11,6 +11,7 @@ import com.p2pcontrol.ve.data.local.entity.*
 import com.p2pcontrol.ve.data.model.Moneda
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 
@@ -48,23 +49,23 @@ abstract class AppDatabase : RoomDatabase() {
                     "p2p_control_ve_db"
                 )
                     .fallbackToDestructiveMigration()
-                    .addCallback(object : Callback() {
-                        override fun onCreate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
-                            super.onCreate(db)
-                            INSTANCE?.let { database ->
-                                CoroutineScope(Dispatchers.IO).launch {
-                                    seedData(database)
-                                }
-                            }
-                        }
-                    })
                     .build()
                 INSTANCE = instance
+
+                // Seed data AFTER database is built and INSTANCE is assigned
+                CoroutineScope(Dispatchers.IO).launch {
+                    seedData(instance)
+                }
+
                 instance
             }
         }
 
         private suspend fun seedData(database: AppDatabase) {
+            // Only seed if tables are empty
+            val existingBancos = database.bancoDao().getAllBancosActivos().first()
+            if (existingBancos.isNotEmpty()) return
+
             // Bancos predeterminados
             val bancos = listOf(
                 BancoEntity(nombre = "Banesco", moneda = Moneda.VES, saldoInicial = BigDecimal.ZERO),

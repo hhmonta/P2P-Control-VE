@@ -164,7 +164,12 @@ class ConfiguracionViewModel(
                 val transacciones = transaccionRepository.getAllTransacciones().first()
                 val dateFormat = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
                 val fileName = "P2PControl_transacciones_${dateFormat.format(Date())}.csv"
-                val dir = File(context.getExternalFilesDir(null), "exports")
+                val externalDir = context.getExternalFilesDir(null)
+                val dir = if (externalDir != null) {
+                    File(externalDir, "exports")
+                } else {
+                    File(context.filesDir, "exports")
+                }
                 dir.mkdirs()
                 val file = File(dir, fileName)
 

@@ -74,7 +74,7 @@ fun SummaryCard(
 @Composable
 fun BancoSaldoCard(
     bancoNombre: String,
-    moneda: String,
+    monedaCodigo: com.p2pcontrol.ve.data.model.Moneda,
     saldo: BigDecimal,
     saldoUsd: BigDecimal,
     modifier: Modifier = Modifier
@@ -101,9 +101,9 @@ fun BancoSaldoCard(
                     fontWeight = FontWeight.Medium
                 )
                 Text(
-                    text = "${moneda} ${formatBigDecimal(saldo)}",
+                    text = "${monedaCodigo.simbolo} ${formatBigDecimal(saldo)}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (moneda == "USD") UsdColor else VesColor
+                    color = if (monedaCodigo == com.p2pcontrol.ve.data.model.Moneda.USD) UsdColor else VesColor
                 )
             }
             Column(horizontalAlignment = Alignment.End) {
